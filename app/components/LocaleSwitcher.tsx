@@ -1,8 +1,9 @@
 /**
- * 简繁切换按钮
+ * 简繁切换 — Apple 风格纯文字链接
+ *
+ * 放在 header 右侧，不抢视觉权重
  */
 
-import { Button } from '~/components/ui/button'
 import { setClientLocale } from '~/i18n/client'
 import { useLocale } from '~/i18n/use-locale'
 
@@ -16,8 +17,12 @@ export function LocaleSwitcher() {
   }
 
   return (
-    <Button variant="ghost" size="sm" onClick={toggle}>
+    <button
+      type="button"
+      onClick={toggle}
+      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+    >
       {locale === 'zh-TW' ? '简' : '繁'}
-    </Button>
+    </button>
   )
 }

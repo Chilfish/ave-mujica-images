@@ -1,10 +1,11 @@
 /**
- * 系列切换标签 — shadcn Tabs，从 series.json 动态生成
+ * 系列切换 — Apple-style segmented control
+ *
+ * iOS 风格：紧凑的 pill 分段控件，适合和搜索框同排
  */
 
 import type { SeriesInfo } from '~/lib/images'
 import { useSearchParams } from 'react-router'
-import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { useLocale } from '~/i18n/use-locale'
 
 interface SeriesTabsProps {
@@ -24,14 +25,21 @@ export function SeriesTabs({ seriesList }: SeriesTabsProps) {
   }
 
   return (
-    <Tabs value={current} onValueChange={handleChange}>
-      <TabsList>
-        {seriesList.map(series => (
-          <TabsTrigger key={series.id} value={series.id}>
-            {series.title[locale as 'zh-TW' | 'zh-CN']}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className="inline-flex items-center rounded-lg bg-muted p-0.5 text-sm">
+      {seriesList.map(series => (
+        <button
+          type="button"
+          key={series.id}
+          onClick={() => handleChange(series.id)}
+          className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            current === series.id
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {series.title[locale as 'zh-TW' | 'zh-CN']}
+        </button>
+      ))}
+    </div>
   )
 }

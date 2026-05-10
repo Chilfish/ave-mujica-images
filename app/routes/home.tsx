@@ -1,14 +1,8 @@
 /**
- * 首页 — 搜索 + 无限滚动图片网格
+ * 首页 — Apple UX
  *
- * 架构：
- * - SSR loader：只提供系列目录、UI 文案、集数列表（轻量 <5KB）
- * - 客户端：useImageSearch hook → fetch /api/images 分页加载
- *
- * Apple UX：
- * - 渐进加载、骨架屏、流畅滚动
- * - 手机端 2 列、平板 3 列、桌面 4 列
- * - Sticky header + search bar
+ * 单 sticky header：标题 + 语言切换 + 工具栏（搜索/系列/集数/排序全在一排）
+ * 无 footer，版本信息在网格底部
  */
 
 import type { Route } from './+types/home'
@@ -17,8 +11,8 @@ import type { SeriesInfo } from '~/lib/images'
 import { useLoaderData } from 'react-router'
 import { BrowserWarning } from '~/components/BrowserWarning'
 import { EpisodeFilter } from '~/components/EpisodeFilter'
-import { Footer } from '~/components/Footer'
 import { ImageGrid } from '~/components/ImageGrid'
+import { LocaleSwitcher } from '~/components/LocaleSwitcher'
 import { SearchBar } from '~/components/SearchBar'
 import { SeriesTabs } from '~/components/SeriesTabs'
 import { SortToggleButtons } from '~/components/SortToggleButtons'
@@ -83,41 +77,48 @@ export default function Home() {
   const data = useLoaderData<LoaderData>()
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-background">
       <BrowserWarning />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
-          <h1 className="text-lg sm:text-xl font-bold text-primary">
-            {data.ui.siteTitle}
-          </h1>
-          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {data.ui.siteDescription}
-          </p>
+      {/* Apple-style single sticky header bar */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        {/* Title row */}
+        <div className="container mx-auto px-4 pt-3 pb-1 flex items-center justify-between">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight truncate">
+              截圖搜尋器
+            </h1>
+          </div>
+          <LocaleSwitcher />
         </div>
-      </header>
 
-      {/* Search panel — sticky below header */}
-      <div className="sticky top-[56px] sm:top-[60px] z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Toolbar row — all controls inline */}
+        <div className="container mx-auto px-4 pb-3">
+          <div className="flex items-center gap-2">
             <SearchBar />
+            <SeriesTabs seriesList={data.seriesList} />
             <EpisodeFilter episodes={data.episodes} />
             <SortToggleButtons />
           </div>
-          <div className="mt-2">
-            <SeriesTabs seriesList={data.seriesList} />
-          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Image grid — client-side data */}
-      <div className="flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+      {/* Image grid */}
+      <div className="container mx-auto px-3 sm:px-4 py-3">
         <SearchResults />
       </div>
 
-      <Footer />
+      {/* Subtle version at very bottom */}
+      <div className="text-center py-8">
+        <p className="text-[10px] text-muted-foreground/50">
+          {data.ui.version}
+          {' '}
+          2.0.0 ·
+          {data.ui.updated}
+          {' '}
+          2026-05-10
+        </p>
+      </div>
     </div>
   )
 }
