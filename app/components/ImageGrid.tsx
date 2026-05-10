@@ -83,7 +83,7 @@ function Row({
 
 export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [listRef, listElement] = useListCallbackRef()
+  const [listRef, _listElement] = useListCallbackRef()
   const [containerWidth, setContainerWidth] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
