@@ -1,14 +1,15 @@
 /**
- * 虚拟滚动图片网格 — react-window VariableSizeList + 自适应列数
+ * 虚拟滚动图片网格 — react-window v2 List + 自适应列数
  *
- * 替代原来的 react-virtualized (WindowScroller/AutoSizer/CellMeasurer)
- * 列数依据 viewport 宽度：<640 → 2, <1024 → 3, >=1024 → 4
+ * react-window v2 API:
+ *   List(rowCount, rowHeight, rowComponent, rowProps)
+ *   子元素是 optionally overlay，不是 render prop
  */
 
 import type { Locale } from '~/i18n/types'
 import type { ImageEntry } from '~/lib/images'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { List } from 'react-window'
+import { List, useListCallbackRef } from 'react-window'
 import { ImageCard } from './ImageCard'
 
 interface ImageGridProps {
@@ -35,19 +36,59 @@ function getCols(width: number): number {
 }
 
 const CARD_GAP = 16
-const CARD_ASPECT = 9 / 16
+
+function Row({
+  index,
+  style,
+  data,
+}: {
+  index: number
+  style: React.CSSProperties
+  data: {
+    images: ImageEntry[]
+    cols: number
+    colWidth: number
+    seriesId: string
+    locale: Locale
+    ui: ImageGridProps['ui']
+  }
+}) {
+  const { images, cols, colWidth, seriesId, locale, ui } = data
+  const start = index * cols
+  const rowImages = images.slice(start, start + cols)
+
+  return (
+    <div
+      style={{
+        ...style,
+        paddingBottom: CARD_GAP,
+      }}
+      className="flex gap-4"
+    >
+      {rowImages.map(image => (
+        <div key={image.id} style={{ width: colWidth }}>
+          <ImageCard
+            image={image}
+            seriesId={seriesId}
+            locale={locale}
+            ui={ui}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<List>(null)
+  const [listRef, listElement] = useListCallbackRef()
   const [containerWidth, setContainerWidth] = useState(0)
-  const [containerHeight, setContainerHeight] = useState(600)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   const cols = getCols(containerWidth)
-  const colWidth = Math.floor((containerWidth - CARD_GAP * (cols - 1)) / cols)
-  const rowHeight = Math.floor(colWidth * CARD_ASPECT + 80) // + 台词区域
-  const rowCount = Math.ceil(images.length / cols)
+  const colWidth = containerWidth > 0 ? Math.floor((containerWidth - CARD_GAP * (cols - 1)) / cols) : 0
+  const rowHeight = colWidth > 0 ? Math.floor(colWidth * (9 / 16) + 80) : 0
+  const rowCount = containerWidth > 0 ? Math.ceil(images.length / cols) : 0
 
   // 监听容器尺寸
   useEffect(() => {
@@ -57,27 +98,28 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        setContainerWidth(width)
-        setContainerHeight(height)
+        setContainerWidth(entry.contentRect.width)
       }
     })
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
 
-  // 当 images/cols 变化时刷新列表
+  // 当 images/cols 变化时滚回顶部
   useEffect(() => {
-    listRef.current?.scrollToItem(0, 'start')
-  }, [images, cols])
+    listRef?.scrollToRow({ index: 0 })
+  }, [images, cols, listRef])
 
-  const handleScroll = useCallback(({ scrollOffset }: { scrollOffset: number }) => {
-    setShowScrollTop(scrollOffset > 500)
-  }, [])
+  const handleRowsRendered = useCallback(
+    ({ visibleRows }: { visibleRows: { startIndex: number, stopIndex: number } }) => {
+      setShowScrollTop(visibleRows.startIndex > 5)
+    },
+    [],
+  )
 
   const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToItem(0, 'start')
-  }, [])
+    listRef?.scrollToRow({ index: 0 })
+  }, [listRef])
 
   // 无结果
   if (images.length === 0) {
@@ -88,47 +130,30 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
     )
   }
 
-  if (containerWidth === 0) {
-    return <div ref={containerRef} className="flex-1" />
+  // 等待容器测量
+  if (containerWidth === 0 || rowHeight === 0) {
+    return <div ref={containerRef} className="flex-1 min-h-[400px]" />
   }
 
   return (
     <div ref={containerRef} className="flex-1 relative">
       <List
-        ref={listRef}
-        width={containerWidth}
-        height={containerHeight}
-        itemCount={rowCount}
-        itemSize={rowHeight + CARD_GAP}
-        onScroll={handleScroll}
-        overscanCount={2}
-      >
-        {({ index, style }) => {
-          const start = index * cols
-          const rowImages = images.slice(start, start + cols)
-
-          return (
-            <div
-              style={{
-                ...style,
-                paddingBottom: CARD_GAP,
-              }}
-              className="flex gap-4"
-            >
-              {rowImages.map(image => (
-                <div key={image.id} style={{ width: colWidth }}>
-                  <ImageCard
-                    image={image}
-                    seriesId={seriesId}
-                    locale={locale}
-                    ui={ui}
-                  />
-                </div>
-              ))}
-            </div>
-          )
+        className="!h-full"
+        listRef={listRef}
+        rowComponent={Row}
+        rowCount={rowCount}
+        rowHeight={rowHeight + CARD_GAP}
+        rowProps={{
+          images,
+          cols,
+          colWidth,
+          seriesId,
+          locale,
+          ui,
         }}
-      </List>
+        onRowsRendered={handleRowsRendered}
+        overscanCount={2}
+      />
 
       {/* 回到顶部 */}
       {showScrollTop && (
@@ -136,6 +161,7 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
           type="button"
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 size-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity z-50"
+          title="回到顶部"
         >
           ↑
         </button>
