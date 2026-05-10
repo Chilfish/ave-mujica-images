@@ -113,7 +113,7 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
   }, [images, cols, listRef])
 
   const handleRowsRendered = useCallback(
-    ({ visibleRows }: { visibleRows: { startIndex: number, stopIndex: number } }) => {
+    (visibleRows: { startIndex: number, stopIndex: number }) => {
       setShowScrollTop(visibleRows.startIndex > 5)
     },
     [],
