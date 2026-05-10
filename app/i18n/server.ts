@@ -6,7 +6,7 @@ function getCookie(request: Request, name: string): string | null {
     return null
 
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
-  return match ? decodeURIComponent(match[1]) : null
+  return match?.[1] ? decodeURIComponent(match[1]) : null
 }
 
 export function getLocale(request: Request): Locale {

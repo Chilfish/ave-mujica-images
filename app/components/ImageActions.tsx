@@ -39,7 +39,7 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
       ])
-      toastManager.show({ title: ui.copied })
+      toastManager.add({ title: ui.copied })
     }
     catch {
       // 降级：canvas → clipboard
@@ -60,11 +60,11 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
           await navigator.clipboard.write([
             new ClipboardItem({ [blob.type]: blob }),
           ])
-          toastManager.show({ title: ui.copied })
+          toastManager.add({ title: ui.copied })
           return
         }
       }
-      toastManager.show({ title: '复制失败，请尝试下载' })
+      toastManager.add({ title: '复制失败，请尝试下载' })
     }
     finally {
       setPending(null)
@@ -75,7 +75,7 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
     setPending('link')
     const url = new URL(webpUrl, window.location.origin).href
     await navigator.clipboard.writeText(url)
-    toastManager.show({ title: ui.copiedLink })
+    toastManager.add({ title: ui.copiedLink })
     setPending(null)
   }, [webpUrl, ui])
 

@@ -18,18 +18,17 @@ export function SortToggleButtons() {
 
   const ui = uiStrings[locale]
 
-  const handleChange = (val: string) => {
-    if (!val)
+  const handleChange = (vals: readonly string[]) => {
+    if (!vals.length)
       return
     const params = new URLSearchParams(searchParams)
-    params.set('order', val)
+    params.set('order', vals[0]!)
     setSearchParams(params, { replace: true })
   }
 
   return (
     <ToggleGroup
-      type="single"
-      value={order}
+      value={[order]}
       onValueChange={handleChange}
     >
       <ToggleGroupItem value="oldest" aria-label={ui.oldestFirst} title={ui.oldestFirst}>

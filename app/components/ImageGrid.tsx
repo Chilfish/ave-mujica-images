@@ -9,7 +9,7 @@
 import type { Locale } from '~/i18n/types'
 import type { ImageEntry } from '~/lib/images'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { List, useListCallbackRef } from 'react-window'
+import { List } from 'react-window'
 import { ImageCard } from './ImageCard'
 
 interface ImageGridProps {
@@ -83,7 +83,7 @@ function Row({
 
 export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [listRef, _listElement] = useListCallbackRef()
+  const listRef = useRef<{ scrollToRow: (config: { index: number }) => void }>(null)
   const [containerWidth, setContainerWidth] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
@@ -109,8 +109,8 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
 
   // 当 images/cols 变化时滚回顶部
   useEffect(() => {
-    listRef?.scrollToRow({ index: 0 })
-  }, [images, cols, listRef])
+    listRef.current?.scrollToRow({ index: 0 })
+  }, [images, cols])
 
   const handleRowsRendered = useCallback(
     (visibleRows: { startIndex: number, stopIndex: number }) => {
@@ -120,8 +120,8 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
   )
 
   const scrollToTop = useCallback(() => {
-    listRef?.scrollToRow({ index: 0 })
-  }, [listRef])
+    listRef.current?.scrollToRow({ index: 0 })
+  }, [])
 
   // 无结果
   if (images.length === 0) {
@@ -141,18 +141,12 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
     <div ref={containerRef} className="flex-1 relative">
       <List
         className="!h-full"
-        listRef={listRef}
+        listRef={listRef as unknown as React.Ref<{ readonly element: HTMLDivElement | null, scrollToRow: (config: { index: number }) => void }>}
         rowComponent={Row}
         rowCount={rowCount}
         rowHeight={rowHeight + CARD_GAP}
-        rowProps={{
-          images,
-          cols,
-          colWidth,
-          seriesId,
-          locale,
-          ui,
-        }}
+        // @ts-expect-error rowProps type infers index/style but List injects them
+        rowProps={{ images, cols, colWidth, seriesId, locale, ui }}
         onRowsRendered={handleRowsRendered}
         overscanCount={2}
       />

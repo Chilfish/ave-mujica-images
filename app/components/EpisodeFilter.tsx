@@ -22,9 +22,9 @@ export function EpisodeFilter({ episodes }: EpisodeFilterProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const value = searchParams.get('episode') || '0'
 
-  const handleChange = (val: string) => {
+  const handleChange = (val: string | null) => {
     const params = new URLSearchParams(searchParams)
-    if (val !== '0') {
+    if (val && val !== '0') {
       params.set('episode', val)
     }
     else {

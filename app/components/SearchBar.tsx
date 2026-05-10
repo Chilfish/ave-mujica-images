@@ -13,7 +13,7 @@ export function SearchBar() {
   const [locale] = useLocale()
   const [searchParams, setSearchParams] = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const value = searchParams.get('q') || ''
 
