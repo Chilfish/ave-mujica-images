@@ -98,16 +98,9 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
         href={jpgUrl}
         download
         title={ui.downloadJpg}
+        className="inline-flex items-center justify-center size-8 sm:size-7 rounded-lg border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/90 cursor-pointer"
       >
-        <Button
-          variant="secondary"
-          size="icon-sm"
-          asChild
-        >
-          <span>
-            <Download className="size-3.5" />
-          </span>
-        </Button>
+        <Download className="size-3.5" />
       </a>
       <Button
         variant="secondary"
