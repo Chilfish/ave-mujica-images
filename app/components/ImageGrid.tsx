@@ -40,20 +40,22 @@ const CARD_GAP = 16
 function Row({
   index,
   style,
-  data,
+  images,
+  cols,
+  colWidth,
+  seriesId,
+  locale,
+  ui,
 }: {
   index: number
   style: React.CSSProperties
-  data: {
-    images: ImageEntry[]
-    cols: number
-    colWidth: number
-    seriesId: string
-    locale: Locale
-    ui: ImageGridProps['ui']
-  }
+  images: ImageEntry[]
+  cols: number
+  colWidth: number
+  seriesId: string
+  locale: Locale
+  ui: ImageGridProps['ui']
 }) {
-  const { images, cols, colWidth, seriesId, locale, ui } = data
   const start = index * cols
   const rowImages = images.slice(start, start + cols)
 

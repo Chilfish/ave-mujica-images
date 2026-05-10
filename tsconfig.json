@@ -3,7 +3,6 @@
     "target": "ES2022",
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "baseUrl": ".",
     "rootDirs": [".", "./.react-router/types"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -21,19 +20,5 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/.server/**/*.ts",
-    "**/.server/**/*.tsx",
-    "**/.client/**/*.ts",
-    "**/.client/**/*.tsx",
-    ".react-router/types/**/*"
-  ],
-  "exclude": [
-    "src/**/*",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
-  ]
+  }
 }
