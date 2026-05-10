@@ -1,33 +1,33 @@
 /**
- * 首页 — 搜索 + 图片网格
+ * 首页 — 搜索 + 无限滚动图片网格
  *
- * 组件树：
- *   Header (logo + 标语)
- *   SearchPanel (SearchBar + EpisodeFilter + SortToggleButtons)
- *   SeriesTabs
- *   ImageGrid (react-window 虚拟滚动)
- *   Footer
- *   BrowserWarning
+ * 架构：
+ * - SSR loader：只提供系列目录、UI 文案、集数列表（轻量 <5KB）
+ * - 客户端：useImageSearch hook → fetch /api/images 分页加载
+ *
+ * Apple UX：
+ * - 渐进加载、骨架屏、流畅滚动
+ * - 手机端 2 列、平板 3 列、桌面 4 列
+ * - Sticky header + search bar
  */
 
 import type { Route } from './+types/home'
 import type { UIStrings } from '~/i18n/types'
 import type { SeriesInfo } from '~/lib/images'
-import type { SearchParams, SearchResult } from '~/lib/search'
 import { useLoaderData } from 'react-router'
 import { BrowserWarning } from '~/components/BrowserWarning'
 import { EpisodeFilter } from '~/components/EpisodeFilter'
 import { Footer } from '~/components/Footer'
 import { ImageGrid } from '~/components/ImageGrid'
 import { SearchBar } from '~/components/SearchBar'
-
 import { SeriesTabs } from '~/components/SeriesTabs'
 import { SortToggleButtons } from '~/components/SortToggleButtons'
+import { useImageSearch } from '~/hooks/use-image-search'
 import { getLocale } from '~/i18n/server'
 import { uiStrings } from '~/i18n/ui'
 import { useLocale } from '~/i18n/use-locale'
 import { getImagesBySeries, getSeriesList } from '~/lib/images'
-import { getEpisodeList, searchImages } from '~/lib/search'
+import { getEpisodeList } from '~/lib/search'
 
 export function meta() {
   return [
@@ -37,7 +37,6 @@ export function meta() {
 }
 
 export interface LoaderData {
-  results: SearchResult
   seriesList: SeriesInfo[]
   ui: UIStrings
   locale: string
@@ -48,32 +47,40 @@ export interface LoaderData {
 export function loader({ request }: Route.LoaderArgs): LoaderData {
   const url = new URL(request.url)
   const locale = getLocale(request)
-
-  const params: SearchParams = {
-    q: url.searchParams.get('q') || undefined,
-    series: url.searchParams.get('series') || 'ave-mujica',
-    episode: Number.parseInt(url.searchParams.get('episode') || '0', 10) || undefined,
-    order: (url.searchParams.get('order') as 'oldest' | 'newest') || 'oldest',
-  }
-
-  const seriesList = getSeriesList()
-  const images = getImagesBySeries(params.series!)
-  const results = searchImages(images, params)
-  const episodes = getEpisodeList(images)
+  const series = url.searchParams.get('series') || 'ave-mujica'
 
   return {
-    results,
-    seriesList,
+    seriesList: getSeriesList(),
     ui: uiStrings[locale],
     locale,
-    currentSeries: params.series!,
-    episodes,
+    currentSeries: series,
+    episodes: getEpisodeList(getImagesBySeries(series)),
   }
+}
+
+function SearchResults() {
+  const data = useLoaderData<LoaderData>()
+  const [locale] = useLocale()
+  const { images, isLoading, hasMore, loadMore, total } = useImageSearch({
+    series: data.currentSeries,
+  })
+
+  return (
+    <ImageGrid
+      images={images}
+      isLoading={isLoading}
+      hasMore={hasMore}
+      loadMore={loadMore}
+      total={total}
+      seriesId={data.currentSeries}
+      locale={locale}
+      ui={data.ui}
+    />
+  )
 }
 
 export default function Home() {
   const data = useLoaderData<LoaderData>()
-  const [locale] = useLocale()
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -81,47 +88,33 @@ export default function Home() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3">
-          <h1 className="text-xl font-bold text-primary">
+        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+          <h1 className="text-lg sm:text-xl font-bold text-primary">
             {data.ui.siteTitle}
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
             {data.ui.siteDescription}
           </p>
         </div>
       </header>
 
-      {/* Search panel */}
-      <div className="sticky top-[60px] z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-wrap items-center gap-3">
+      {/* Search panel — sticky below header */}
+      <div className="sticky top-[56px] sm:top-[60px] z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchBar />
             <EpisodeFilter episodes={data.episodes} />
             <SortToggleButtons />
           </div>
-          <div className="mt-3">
+          <div className="mt-2">
             <SeriesTabs seriesList={data.seriesList} />
           </div>
         </div>
       </div>
 
-      {/* Results info */}
-      {data.results.query && (
-        <div className="container mx-auto px-4 py-2 text-sm text-muted-foreground">
-          {data.ui.searchResults}
-          :
-          {data.results.total}
-        </div>
-      )}
-
-      {/* Image grid */}
-      <div className="flex-1 container mx-auto px-4 py-4">
-        <ImageGrid
-          images={data.results.images}
-          seriesId={data.currentSeries}
-          locale={locale}
-          ui={data.ui}
-        />
+      {/* Image grid — client-side data */}
+      <div className="flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <SearchResults />
       </div>
 
       <Footer />

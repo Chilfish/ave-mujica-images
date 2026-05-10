@@ -1,19 +1,23 @@
 /**
  * 悬浮操作按钮组 — 复制图片 / 下载 JPG / 复制链接
  *
- * 浏览器兼容：
- * - ClipboardItem.write 需要安全上下文（HTTPS 或 localhost）
- * - 降级方案：创建临时 canvas → toBlob → ClipboardItem
+ * Apple UX：min 44px touch target，半透明毛玻璃背景
  */
 
-import type { ImageEntry } from '~/lib/images'
 import { Copy, Download, Link2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { Button } from '~/components/ui/button'
 import { toastManager } from '~/components/ui/toast'
+import { useIsMobile } from '~/hooks/use-mobile'
+
+interface ImageResult {
+  id: string
+  episode: number
+  text: Record<string, string>
+  filename: string
+}
 
 interface ImageActionsProps {
-  image: ImageEntry
+  image: ImageResult
   seriesId: string
   ui: {
     copyImage: string
@@ -27,6 +31,7 @@ interface ImageActionsProps {
 
 export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps) {
   const [pending, setPending] = useState<string | null>(null)
+  const isMobile = useIsMobile()
 
   const webpUrl = `/images/${seriesId}/${image.filename}`
   const jpgUrl = webpUrl.replace('.webp', '.jpg')
@@ -42,7 +47,6 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
       toastManager.add({ title: ui.copied })
     }
     catch {
-      // 降级：canvas → clipboard
       const img = new Image()
       img.crossOrigin = 'anonymous'
       img.src = webpUrl
@@ -64,7 +68,7 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
           return
         }
       }
-      toastManager.add({ title: '复制失败，请尝试下载' })
+      toastManager.add({ title: '复制失败' })
     }
     finally {
       setPending(null)
@@ -79,38 +83,46 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
     setPending(null)
   }, [webpUrl, ui])
 
+  const btnSize = isMobile ? 'size-11' : 'size-8'
+  const iconSize = isMobile ? 'size-4.5' : 'size-3.5'
+
   return (
     <div
-      className={`absolute top-2 right-2 flex gap-1 transition-opacity duration-200 ${
+      className={`absolute top-2 right-2 flex gap-1.5 transition-opacity duration-200 ${
         visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
-      <Button
-        variant="secondary"
-        size="icon-sm"
+      {/* 复制图片 */}
+      <button
+        type="button"
         onClick={copyImage}
         disabled={pending !== null}
         title={ui.copyImage}
+        className={`${btnSize} rounded-lg bg-white/15 backdrop-blur-sm hover:bg-white/25 active:bg-white/35 flex items-center justify-center text-white transition-colors disabled:opacity-50`}
       >
-        <Copy className="size-3.5" />
-      </Button>
+        <Copy className={iconSize} />
+      </button>
+
+      {/* 下载 JPG */}
       <a
         href={jpgUrl}
         download
         title={ui.downloadJpg}
-        className="inline-flex items-center justify-center size-8 sm:size-7 rounded-lg border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/90 cursor-pointer"
+        className={`${btnSize} rounded-lg bg-white/15 backdrop-blur-sm hover:bg-white/25 active:bg-white/35 flex items-center justify-center text-white transition-colors`}
       >
-        <Download className="size-3.5" />
+        <Download className={iconSize} />
       </a>
-      <Button
-        variant="secondary"
-        size="icon-sm"
+
+      {/* 复制链接 */}
+      <button
+        type="button"
         onClick={copyLink}
         disabled={pending !== null}
         title={ui.copyLink}
+        className={`${btnSize} rounded-lg bg-white/15 backdrop-blur-sm hover:bg-white/25 active:bg-white/35 flex items-center justify-center text-white transition-colors disabled:opacity-50`}
       >
-        <Link2 className="size-3.5" />
-      </Button>
+        <Link2 className={iconSize} />
+      </button>
     </div>
   )
 }

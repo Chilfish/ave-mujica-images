@@ -1,19 +1,27 @@
 /**
- * 虚拟滚动图片网格 — react-window v2 List + 自适应列数
+ * 图片网格 — CSS Grid + 无限滚动
  *
- * react-window v2 API:
- *   List(rowCount, rowHeight, rowComponent, rowProps)
- *   子元素是 optionally overlay，不是 render prop
+ * Apple UX 原则：
+ * - 渐进加载，不一次性渲染全部
+ * - 紧凑间距（12px gap），让图片呼吸
+ * - 骨架屏加载态
+ * - 大触控目标（手机端图片卡片足够大）
  */
 
+import type { useImageSearch } from '~/hooks/use-image-search'
 import type { Locale } from '~/i18n/types'
-import type { ImageEntry } from '~/lib/images'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { List } from 'react-window'
+import { useEffect, useRef } from 'react'
+import { Skeleton } from '~/components/ui/skeleton'
 import { ImageCard } from './ImageCard'
 
+type HookReturn = ReturnType<typeof useImageSearch>
+
 interface ImageGridProps {
-  images: ImageEntry[]
+  images: HookReturn['images']
+  isLoading: boolean
+  hasMore: boolean
+  loadMore: () => void
+  total: number
   seriesId: string
   locale: Locale
   ui: {
@@ -27,104 +35,62 @@ interface ImageGridProps {
   }
 }
 
-function getCols(width: number): number {
-  if (width < 640)
-    return 2
-  if (width < 1024)
-    return 3
-  return 4
-}
-
-const CARD_GAP = 16
-
-function Row({
-  index,
-  style,
-  images,
-  cols,
-  colWidth,
-  seriesId,
-  locale,
-  ui,
-}: {
-  index: number
-  style: React.CSSProperties
-  images: ImageEntry[]
-  cols: number
-  colWidth: number
-  seriesId: string
-  locale: Locale
-  ui: ImageGridProps['ui']
-}) {
-  const start = index * cols
-  const rowImages = images.slice(start, start + cols)
-
+function SkeletonCard() {
   return (
-    <div
-      style={{
-        ...style,
-        paddingBottom: CARD_GAP,
-      }}
-      className="flex gap-4"
-    >
-      {rowImages.map(image => (
-        <div key={image.id} style={{ width: colWidth }}>
-          <ImageCard
-            image={image}
-            seriesId={seriesId}
-            locale={locale}
-            ui={ui}
-          />
-        </div>
-      ))}
+    <div className="rounded-lg overflow-hidden border bg-card">
+      <Skeleton className="aspect-[16/9] w-full" />
+      <div className="p-2 space-y-1.5">
+        <Skeleton className="h-3 w-3/4" />
+        <Skeleton className="h-2.5 w-1/3" />
+      </div>
     </div>
   )
 }
 
-export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<{ scrollToRow: (config: { index: number }) => void }>(null)
-  const [containerWidth, setContainerWidth] = useState(0)
-  const [showScrollTop, setShowScrollTop] = useState(false)
+export function ImageGrid({
+  images,
+  isLoading,
+  hasMore,
+  loadMore,
+  total,
+  seriesId,
+  locale,
+  ui,
+}: ImageGridProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const cols = getCols(containerWidth)
-  const colWidth = containerWidth > 0 ? Math.floor((containerWidth - CARD_GAP * (cols - 1)) / cols) : 0
-  const rowHeight = colWidth > 0 ? Math.floor(colWidth * (9 / 16) + 80) : 0
-  const rowCount = containerWidth > 0 ? Math.ceil(images.length / cols) : 0
-
-  // 监听容器尺寸
+  // IntersectionObserver 无限滚动
   useEffect(() => {
-    const el = containerRef.current
+    const el = sentinelRef.current
     if (!el)
       return
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerWidth(entry.contentRect.width)
-      }
-    })
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !isLoading) {
+          loadMore()
+        }
+      },
+      { rootMargin: '200px' }, // 提前 200px 触发
+    )
+
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [hasMore, isLoading, loadMore])
 
-  // 当 images/cols 变化时滚回顶部
-  useEffect(() => {
-    listRef.current?.scrollToRow({ index: 0 })
-  }, [images, cols])
-
-  const handleRowsRendered = useCallback(
-    (visibleRows: { startIndex: number, stopIndex: number }) => {
-      setShowScrollTop(visibleRows.startIndex > 5)
-    },
-    [],
-  )
-
-  const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToRow({ index: 0 })
-  }, [])
+  // 初始加载态
+  if (images.length === 0 && isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    )
+  }
 
   // 无结果
-  if (images.length === 0) {
+  if (images.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <p className="text-lg">{ui.noResults}</p>
@@ -132,36 +98,40 @@ export function ImageGrid({ images, seriesId, locale, ui }: ImageGridProps) {
     )
   }
 
-  // 等待容器测量
-  if (containerWidth === 0 || rowHeight === 0) {
-    return <div ref={containerRef} className="flex-1 min-h-[400px]" />
-  }
-
   return (
-    <div ref={containerRef} className="flex-1 relative">
-      <List
-        className="!h-full"
-        listRef={listRef as unknown as React.Ref<{ readonly element: HTMLDivElement | null, scrollToRow: (config: { index: number }) => void }>}
-        rowComponent={Row}
-        rowCount={rowCount}
-        rowHeight={rowHeight + CARD_GAP}
-        // @ts-expect-error rowProps type infers index/style but List injects them
-        rowProps={{ images, cols, colWidth, seriesId, locale, ui }}
-        onRowsRendered={handleRowsRendered}
-        overscanCount={2}
-      />
+    <div>
+      {/* 网格 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {images.map(img => (
+          <ImageCard
+            key={img.id}
+            image={img}
+            seriesId={seriesId}
+            locale={locale}
+            ui={ui}
+          />
+        ))}
+      </div>
 
-      {/* 回到顶部 */}
-      {showScrollTop && (
-        <button
-          type="button"
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 size-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity z-50"
-          title="回到顶部"
-        >
-          ↑
-        </button>
+      {/* 加载更多骨架 */}
+      {isLoading && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={`skel-${i}`} />
+          ))}
+        </div>
       )}
+
+      {/* Sentinel + 状态 */}
+      <div ref={sentinelRef} className="py-8 text-center text-sm text-muted-foreground">
+        {isLoading && images.length > 0
+          ? '加载中...'
+          : hasMore
+            ? `已加载 ${images.length} / ${total}`
+            : images.length > 0
+              ? `共 ${total} 张`
+              : null}
+      </div>
     </div>
   )
 }

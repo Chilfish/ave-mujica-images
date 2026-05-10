@@ -1,14 +1,27 @@
 /**
- * 单张图片卡片 — 原生 lazy loading + hover 台词 + 悬浮操作按钮
+ * 单张图片卡片 — 16:9 比例、hover 台词覆盖层
+ *
+ * Apple UX：
+ * - 图片用 object-cover 填充，不拉伸
+ * - overlay 绝对定位，不占用卡片高度
+ * - 手机端 touch-action 优化，长按 = hover
+ * - min tap target 44px
  */
 
 import type { Locale } from '~/i18n/types'
-import type { ImageEntry } from '~/lib/images'
 import { useCallback, useRef, useState } from 'react'
+import { useIsMobile } from '~/hooks/use-mobile'
 import { ImageActions } from './ImageActions'
 
+interface ImageResult {
+  id: string
+  episode: number
+  text: Record<Locale, string>
+  filename: string
+}
+
 interface ImageCardProps {
-  image: ImageEntry
+  image: ImageResult
   seriesId: string
   locale: Locale
   ui: {
@@ -24,7 +37,9 @@ interface ImageCardProps {
 export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
   const [loaded, setLoaded] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const imgRef = useRef<HTMLImageElement>(null)
+  const [tapped, setTapped] = useState(false) // 移动端 tap 切换 overlay
+  const cardRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   const url = `/images/${seriesId}/${image.filename}`
   const displayText = image.text[locale] || image.text['zh-TW']
@@ -32,19 +47,31 @@ export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
 
   const handleLoad = useCallback(() => setLoaded(true), [])
 
+  // 移动端：tap 显示/隐藏 overlay
+  const handleTap = useCallback(() => {
+    if (isMobile) {
+      setTapped(v => !v)
+    }
+  }, [isMobile])
+
+  const showOverlay = isMobile ? tapped : hovered
+
   return (
     <div
-      className="group relative rounded-lg overflow-hidden border bg-card"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      ref={cardRef}
+      className="group relative rounded-lg overflow-hidden border bg-card cursor-pointer"
+      onMouseEnter={() => !isMobile && setHovered(true)}
+      onMouseLeave={() => !isMobile && setHovered(false)}
+      onClick={handleTap}
     >
-      {/* 图片 */}
-      <div className="aspect-[16/9] relative">
+      {/* 图片容器 — 固定 16:9 */}
+      <div className="relative aspect-[16/9] w-full overflow-hidden">
+        {/* 骨架 */}
         {!loaded && (
           <div className="absolute inset-0 animate-pulse bg-muted" />
         )}
+
         <img
-          ref={imgRef}
           src={url}
           alt={displayText}
           loading="lazy"
@@ -55,22 +82,29 @@ export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
         />
       </div>
 
-      {/* Hover 台词覆盖层 */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 transition-opacity duration-200 ${
-          hovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        <p className="text-sm text-white font-medium line-clamp-3">{displayText}</p>
-        <p className="text-xs text-white/60 mt-1">{episodeLabel}</p>
+      {/* 底部信息条 — 始终可见的集数 */}
+      <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-muted-foreground">
+        <span className="truncate">{episodeLabel}</span>
+        <span className="text-[10px] opacity-50 tabular-nums">{image.id.split('-').pop()}</span>
       </div>
 
-      {/* 悬浮操作按钮 */}
+      {/* Hover/Tap 台词覆盖层 — 绝对定位，不占布局空间 */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-3 transition-opacity duration-200 ${
+          showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <p className="text-[13px] leading-snug text-white font-medium line-clamp-4">
+          {displayText}
+        </p>
+      </div>
+
+      {/* 悬浮操作按钮 — 只在 overlay 可见时显示 */}
       <ImageActions
         image={image}
         seriesId={seriesId}
         ui={ui}
-        visible={hovered}
+        visible={showOverlay}
       />
     </div>
   )
