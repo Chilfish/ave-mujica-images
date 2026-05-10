@@ -75,11 +75,11 @@ export function ImageActions({ image, ui, visible }: ImageActionsProps) {
 
   const copyLink = useCallback(async () => {
     setPending('link')
-    const url = new URL(webpUrl, window.location.origin).href
+    const url = new URL(jpgUrl, window.location.origin).href
     await navigator.clipboard.writeText(url)
     toastManager.add({ title: ui.copiedLink })
     setPending(null)
-  }, [webpUrl, ui])
+  }, [jpgUrl, ui])
 
   const btnSize = isMobile ? 'size-11' : 'size-8'
   const iconSize = isMobile ? 'size-4.5' : 'size-3.5'
