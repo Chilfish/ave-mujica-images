@@ -1,0 +1,22 @@
+{
+  "series": [
+    {
+      "id": "ave-mujica",
+      "title": {
+        "zh-TW": "Ave Mujica",
+        "zh-CN": "Ave Mujica"
+      },
+      "episodes": 13,
+      "logo": "/images/ave-mujica/logo.png"
+    },
+    {
+      "id": "mygo",
+      "title": {
+        "zh-TW": "MyGO!!!!!",
+        "zh-CN": "MyGO!!!!!"
+      },
+      "episodes": 13,
+      "logo": "/images/mygo/logo.png"
+    }
+  ]
+}
