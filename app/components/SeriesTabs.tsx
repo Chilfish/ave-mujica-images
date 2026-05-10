@@ -1,11 +1,18 @@
 /**
- * 系列切换 — Apple-style segmented control
+ * 系列切换 — Select 下拉，和 EpisodeFilter 一致
  *
- * iOS 风格：紧凑的 pill 分段控件，适合和搜索框同排
+ * 无论多少系列都不会溢出，始终紧凑一个选择器宽度
  */
 
 import type { SeriesInfo } from '~/lib/images'
 import { useSearchParams } from 'react-router'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { useLocale } from '~/i18n/use-locale'
 
 interface SeriesTabsProps {
@@ -17,29 +24,31 @@ export function SeriesTabs({ seriesList }: SeriesTabsProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const current = searchParams.get('series') || seriesList[0]?.id || 'ave-mujica'
 
-  const handleChange = (val: string) => {
+  const handleChange = (val: string | null) => {
+    if (!val)
+      return
     const params = new URLSearchParams(searchParams)
     params.set('series', val)
     params.delete('episode')
     setSearchParams(params, { replace: true })
   }
 
+  const currentTitle = seriesList.find(s => s.id === current)?.title[locale as 'zh-TW' | 'zh-CN']
+
   return (
-    <div className="inline-flex items-center rounded-lg bg-muted p-0.5 text-sm">
-      {seriesList.map(series => (
-        <button
-          type="button"
-          key={series.id}
-          onClick={() => handleChange(series.id)}
-          className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-            current === series.id
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          {series.title[locale as 'zh-TW' | 'zh-CN']}
-        </button>
-      ))}
-    </div>
+    <Select value={current} onValueChange={handleChange}>
+      <SelectTrigger className="min-w-fit">
+        <SelectValue>
+          {currentTitle}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {seriesList.map(series => (
+          <SelectItem key={series.id} value={series.id}>
+            {series.title[locale as 'zh-TW' | 'zh-CN']}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

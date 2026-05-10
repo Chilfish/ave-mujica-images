@@ -37,8 +37,10 @@ export function EpisodeFilter({ episodes }: EpisodeFilterProps) {
 
   return (
     <Select value={value} onValueChange={handleChange}>
-      <SelectTrigger className="w-[140px]">
-        <SelectValue placeholder={ui.allEpisodes} />
+      <SelectTrigger className="min-w-fit">
+        <SelectValue placeholder={ui.allEpisodes}>
+          {value !== '0' && ui.episode.replace('{episode}', value)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="0">
