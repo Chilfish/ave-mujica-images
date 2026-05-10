@@ -5,6 +5,7 @@
 import type { Locale } from '~/i18n/types'
 import { useCallback, useState } from 'react'
 import { useIsMobile } from '~/hooks/use-mobile'
+import { getImageUrl, seriesIdFromImageId } from '~/lib/images'
 import { ImageActions } from './ImageActions'
 
 interface ImageResult {
@@ -28,19 +29,14 @@ interface ImageCardProps {
   }
 }
 
-/** 从 id 推导系列：ave-mujica-e01-001 → ave-mujica */
-function seriesFromId(id: string): string {
-  return id.replace(/-e\d+-\d+$/, '')
-}
-
 export function ImageCard({ image, locale, ui }: ImageCardProps) {
   const [loaded, setLoaded] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [tapped, setTapped] = useState(false)
   const isMobile = useIsMobile()
 
-  const seriesId = seriesFromId(image.id)
-  const url = `/images/${seriesId}/${image.filename}`
+  const seriesId = seriesIdFromImageId(image.id)
+  const url = getImageUrl(seriesId, image.filename)
   const displayText = image.text[locale] || image.text['zh-TW']
   const episodeLabel = ui.episode.replace('{episode}', String(image.episode))
 

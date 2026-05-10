@@ -45,10 +45,24 @@ export function getImagesBySeries(seriesId: string): ImageEntry[] {
   return imagesBySeries.get(seriesId) ?? []
 }
 
+/** S3 存储根路径 */
+export const S3_BASE = 'https://s3.chilfish.top/bangumi'
+
+/** S3 上配置文件地址（本地 app/data/ 保留作备份） */
+export const S3_SERIES_JSON = `${S3_BASE}/series.json`
+export const S3_IMAGES_JSON = (seriesId: string) => `${S3_BASE}/${seriesId}.json`
+
+/**
+ * 从 image.id 推导系列名：ave-mujica-e01-001 → ave-mujica
+ */
+export function seriesIdFromImageId(id: string): string {
+  return id.replace(/-e\d+-\d+$/, '')
+}
+
 export function getImageUrl(seriesId: string, filename: string): string {
-  return `/images/${seriesId}/${filename}`
+  return `${S3_BASE}/webp/${seriesId}/${filename}`
 }
 
 export function getJpgUrl(seriesId: string, filename: string): string {
-  return getImageUrl(seriesId, filename.replace('.webp', '.jpg'))
+  return `${S3_BASE}/jpg/${seriesId}/${filename.replace('.webp', '.jpg')}`
 }

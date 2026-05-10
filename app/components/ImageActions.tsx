@@ -6,6 +6,7 @@ import { Copy, Download, Link2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toastManager } from '~/components/ui/toast'
 import { useIsMobile } from '~/hooks/use-mobile'
+import { getImageUrl, getJpgUrl, seriesIdFromImageId } from '~/lib/images'
 
 interface ImageResult {
   id: string
@@ -25,17 +26,13 @@ interface ImageActionsProps {
   visible: boolean
 }
 
-function seriesFromId(id: string): string {
-  return id.replace(/-e\d+-\d+$/, '')
-}
-
 export function ImageActions({ image, ui, visible }: ImageActionsProps) {
   const [pending, setPending] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
-  const seriesId = seriesFromId(image.id)
-  const webpUrl = `/images/${seriesId}/${image.filename}`
-  const jpgUrl = webpUrl.replace('.webp', '.jpg')
+  const seriesId = seriesIdFromImageId(image.id)
+  const webpUrl = getImageUrl(seriesId, image.filename)
+  const jpgUrl = getJpgUrl(seriesId, image.filename)
 
   const copyImage = useCallback(async () => {
     setPending('copy')
