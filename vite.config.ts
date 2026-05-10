@@ -1,19 +1,21 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { fileURLToPath, URL } from 'node:url';
-import { version } from './package.json';
+import { reactRouter } from '@react-router/dev/vite'
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  //   base: '/ave-mujica-images/',
+export default defineConfig(({ isSsrBuild }) => ({
+  plugins: [
+    tailwindcss(),
+    reactRouter(),
+  ],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    tsconfigPaths: true,
+  },
+  server: {
+    port: 9080,
+  },
+  build: {
+    rollupOptions: {
+      input: isSsrBuild ? './server/app.ts' : undefined,
     },
   },
-  define: {
-    BUILD_DATE: JSON.stringify(new Date().toLocaleDateString().split('T')[0]),
-    APP_VERSION: JSON.stringify(version),
-  },
-});
+}))

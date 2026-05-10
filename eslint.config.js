@@ -1,34 +1,18 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
-import tseslint from 'typescript-eslint';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import antfu from '@antfu/eslint-config'
+import reactHooks from 'eslint-plugin-react-hooks'
 
-export default tseslint.config(
-  { ignores: ['dist'] },
-  {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended, eslintPluginPrettierRecommended],
-    files: ['**/*.{ts,tsx}'],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
-    },
-    plugins: {
-      'react-hooks': reactHooks,
-      'react-refresh': reactRefresh,
-    },
-    rules: {
-      ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      'prettier/prettier': [
-        'error',
-        {
-          endOfLine: 'auto',
-          tabWidth: 2,
-        },
-        { usePrettierrc: true },
-      ],
-    },
-  }
-);
+export default antfu({
+  formatters: true,
+  rules: {
+    'unused-imports/no-unused-vars': 'warn',
+    'no-console': 'off',
+    'antfu/no-top-level-await': 'off',
+    'node/prefer-global/buffer': 'off',
+    'node/prefer-global/process': 'off',
+    'accessor-pairs': 'off',
+    'style/multiline-ternary': 'off',
+    'unicorn/prefer-number-properties': 'warn',
+    'ts/no-use-before-define': 'warn',
+    'no-case-declarations': 'off',
+  },
+}, reactHooks.configs.flat.recommended)
