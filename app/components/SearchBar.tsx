@@ -40,7 +40,7 @@ export function SearchBar() {
   const placeholder = uiStrings[locale].searchPlaceholder
 
   return (
-    <InputGroup className="flex-1 min-w-0">
+    <InputGroup className="flex-1 min-w-fit">
       <InputGroupInput
         ref={inputRef}
         type="search"

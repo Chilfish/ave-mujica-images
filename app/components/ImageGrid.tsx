@@ -22,7 +22,6 @@ interface ImageGridProps {
   hasMore: boolean
   loadMore: () => void
   total: number
-  seriesId: string
   locale: Locale
   ui: {
     copyImage: string
@@ -30,8 +29,12 @@ interface ImageGridProps {
     copyLink: string
     copied: string
     copiedLink: string
+    loadFailed: string
     episode: string
     noResults: string
+    loading: string
+    loadedCount: string
+    searchResults: string
   }
 }
 
@@ -53,7 +56,6 @@ export function ImageGrid({
   hasMore,
   loadMore,
   total,
-  seriesId,
   locale,
   ui,
 }: ImageGridProps) {
@@ -106,7 +108,6 @@ export function ImageGrid({
           <ImageCard
             key={img.id}
             image={img}
-            seriesId={seriesId}
             locale={locale}
             ui={ui}
           />
@@ -125,11 +126,11 @@ export function ImageGrid({
       {/* Sentinel + 状态 */}
       <div ref={sentinelRef} className="py-8 text-center text-sm text-muted-foreground">
         {isLoading && images.length > 0
-          ? '加载中...'
+          ? ui.loading
           : hasMore
-            ? `已加载 ${images.length} / ${total}`
+            ? ui.loadedCount.replace('{loaded}', String(images.length)).replace('{total}', String(total))
             : images.length > 0
-              ? `共 ${total} 张`
+              ? ui.searchResults.replace('{count}', String(total))
               : null}
       </div>
     </div>

@@ -6,6 +6,7 @@
 
 import { setClientLocale } from '~/i18n/client'
 import { useLocale } from '~/i18n/use-locale'
+import { Button } from './ui/button'
 
 export function LocaleSwitcher() {
   const [locale] = useLocale()
@@ -17,12 +18,13 @@ export function LocaleSwitcher() {
   }
 
   return (
-    <button
-      type="button"
+    <Button
       onClick={toggle}
-      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      variant="ghost"
+      size="sm"
+      className="text-sm text-foreground/50"
     >
-      {locale === 'zh-TW' ? '简' : '繁'}
-    </button>
+      {locale === 'zh-CN' ? '简' : '繁'}
+    </Button>
   )
 }

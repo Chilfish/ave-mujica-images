@@ -1,7 +1,5 @@
 /**
  * 悬浮操作按钮组 — 复制图片 / 下载 JPG / 复制链接
- *
- * Apple UX：min 44px touch target，半透明毛玻璃背景
  */
 
 import { Copy, Download, Link2 } from 'lucide-react'
@@ -11,28 +9,31 @@ import { useIsMobile } from '~/hooks/use-mobile'
 
 interface ImageResult {
   id: string
-  episode: number
-  text: Record<string, string>
   filename: string
 }
 
 interface ImageActionsProps {
   image: ImageResult
-  seriesId: string
   ui: {
     copyImage: string
     downloadJpg: string
     copyLink: string
     copied: string
     copiedLink: string
+    loadFailed: string
   }
   visible: boolean
 }
 
-export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps) {
+function seriesFromId(id: string): string {
+  return id.replace(/-e\d+-\d+$/, '')
+}
+
+export function ImageActions({ image, ui, visible }: ImageActionsProps) {
   const [pending, setPending] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
+  const seriesId = seriesFromId(image.id)
   const webpUrl = `/images/${seriesId}/${image.filename}`
   const jpgUrl = webpUrl.replace('.webp', '.jpg')
 
@@ -68,7 +69,7 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
           return
         }
       }
-      toastManager.add({ title: '复制失败' })
+      toastManager.add({ title: ui.loadFailed })
     }
     finally {
       setPending(null)
@@ -92,7 +93,6 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
         visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
-      {/* 复制图片 */}
       <button
         type="button"
         onClick={copyImage}
@@ -102,8 +102,6 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
       >
         <Copy className={iconSize} />
       </button>
-
-      {/* 下载 JPG */}
       <a
         href={jpgUrl}
         download
@@ -112,8 +110,6 @@ export function ImageActions({ image, seriesId, ui, visible }: ImageActionsProps
       >
         <Download className={iconSize} />
       </a>
-
-      {/* 复制链接 */}
       <button
         type="button"
         onClick={copyLink}

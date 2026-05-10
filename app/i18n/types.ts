@@ -4,9 +4,9 @@ export interface UIStrings {
   searchPlaceholder: string
   searchResults: string
   noResults: string
-  tabAll: string
-  tabAveMujica: string
-  tabMyGO: string
+  allSeries: string
+  allEpisodes: string
+  episode: string
   copyImage: string
   downloadJpg: string
   copyLink: string
@@ -14,15 +14,19 @@ export interface UIStrings {
   copiedLink: string
   oldestFirst: string
   newestFirst: string
-  allEpisodes: string
-  episode: string
   version: string
   updated: string
   loading: string
+  loadedCount: string
   backToTop: string
   siteTitle: string
+  siteShortTitle: string
   siteDescription: string
+  browserWarningTitle: string
   browserWarning: string
+  loadFailed: string
+  notFoundTitle: string
+  backToHome: string
 }
 
 export type UIStringsMap = Record<Locale, UIStrings>

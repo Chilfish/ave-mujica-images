@@ -39,7 +39,7 @@ export function EpisodeFilter({ episodes }: EpisodeFilterProps) {
     <Select value={value} onValueChange={handleChange}>
       <SelectTrigger className="min-w-fit">
         <SelectValue placeholder={ui.allEpisodes}>
-          {value !== '0' && ui.episode.replace('{episode}', value)}
+          {(value !== '0' && ui.episode.replace('{episode}', value)) || '全集'}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>

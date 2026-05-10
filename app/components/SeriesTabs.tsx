@@ -1,5 +1,5 @@
 /**
- * 系列切换 — Select 下拉，和 EpisodeFilter 一致
+ * 系列切换 — Select 下拉，含「全部系列」选项
  *
  * 无论多少系列都不会溢出，始终紧凑一个选择器宽度
  */
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { uiStrings } from '~/i18n/ui'
 import { useLocale } from '~/i18n/use-locale'
 
 interface SeriesTabsProps {
@@ -22,30 +23,36 @@ interface SeriesTabsProps {
 export function SeriesTabs({ seriesList }: SeriesTabsProps) {
   const [locale] = useLocale()
   const [searchParams, setSearchParams] = useSearchParams()
-  const current = searchParams.get('series') || seriesList[0]?.id || 'ave-mujica'
+  const current = searchParams.get('series') || 'all'
+
+  const ui = uiStrings[locale]
 
   const handleChange = (val: string | null) => {
     if (!val)
       return
     const params = new URLSearchParams(searchParams)
-    params.set('series', val)
+    if (val === 'all')
+      params.delete('series')
+    else params.set('series', val)
     params.delete('episode')
     setSearchParams(params, { replace: true })
   }
 
-  const currentTitle = seriesList.find(s => s.id === current)?.title[locale as 'zh-TW' | 'zh-CN']
+  const currentTitle
+    = current === 'all'
+      ? ui.allSeries
+      : seriesList.find(s => s.id === current)?.title[locale] ?? ui.allSeries
 
   return (
     <Select value={current} onValueChange={handleChange}>
       <SelectTrigger className="min-w-fit">
-        <SelectValue>
-          {currentTitle}
-        </SelectValue>
+        <SelectValue>{currentTitle}</SelectValue>
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="all">{ui.allSeries}</SelectItem>
         {seriesList.map(series => (
           <SelectItem key={series.id} value={series.id}>
-            {series.title[locale as 'zh-TW' | 'zh-CN']}
+            {series.title[locale]}
           </SelectItem>
         ))}
       </SelectContent>

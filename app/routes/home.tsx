@@ -1,8 +1,5 @@
 /**
  * 首页 — Apple UX
- *
- * 单 sticky header：标题 + 语言切换 + 工具栏（搜索/系列/集数/排序全在一排）
- * 无 footer，版本信息在网格底部
  */
 
 import type { Route } from './+types/home'
@@ -20,15 +17,8 @@ import { useImageSearch } from '~/hooks/use-image-search'
 import { getLocale } from '~/i18n/server'
 import { uiStrings } from '~/i18n/ui'
 import { useLocale } from '~/i18n/use-locale'
-import { getImagesBySeries, getSeriesList } from '~/lib/images'
+import { getAllImages, getImagesBySeries, getSeriesList } from '~/lib/images'
 import { getEpisodeList } from '~/lib/search'
-
-export function meta() {
-  return [
-    { title: 'Ave Mujica 截圖搜尋器' },
-    { name: 'description', content: '可透過關鍵字搜尋 MyGO 與 Ave Mujica 的台詞截圖、梗圖' },
-  ]
-}
 
 export interface LoaderData {
   seriesList: SeriesInfo[]
@@ -41,22 +31,33 @@ export interface LoaderData {
 export function loader({ request }: Route.LoaderArgs): LoaderData {
   const url = new URL(request.url)
   const locale = getLocale(request)
-  const series = url.searchParams.get('series') || 'ave-mujica'
+  const series = url.searchParams.get('series') || ''
+
+  const isAll = !series || series === 'all'
+  const images = isAll ? getAllImages() : getImagesBySeries(series)
 
   return {
     seriesList: getSeriesList(),
     ui: uiStrings[locale],
     locale,
-    currentSeries: series,
-    episodes: getEpisodeList(getImagesBySeries(series)),
+    currentSeries: isAll ? '' : series,
+    episodes: getEpisodeList(images),
   }
+}
+
+export function meta({ data }: Route.MetaArgs) {
+  const ui = (data as LoaderData)?.ui
+  return [
+    { title: ui?.siteTitle ?? 'Ave Mujica 截圖搜尋器' },
+    { name: 'description', content: ui?.siteDescription ?? '' },
+  ]
 }
 
 function SearchResults() {
   const data = useLoaderData<LoaderData>()
   const [locale] = useLocale()
   const { images, isLoading, hasMore, loadMore, total } = useImageSearch({
-    series: data.currentSeries,
+    series: data.currentSeries || 'all',
   })
 
   return (
@@ -66,7 +67,6 @@ function SearchResults() {
       hasMore={hasMore}
       loadMore={loadMore}
       total={total}
-      seriesId={data.currentSeries}
       locale={locale}
       ui={data.ui}
     />
@@ -80,19 +80,16 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <BrowserWarning />
 
-      {/* Apple-style single sticky header bar */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        {/* Title row */}
         <div className="container mx-auto px-4 pt-3 pb-1 flex items-center justify-between">
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight truncate">
-              截圖搜尋器
+              {data.ui.siteShortTitle}
             </h1>
           </div>
           <LocaleSwitcher />
         </div>
 
-        {/* Toolbar — search full width, filters wrap below */}
         <div className="container mx-auto px-4 pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <SearchBar />
@@ -105,17 +102,16 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Image grid */}
       <div className="container mx-auto px-3 sm:px-4 py-3">
         <SearchResults />
       </div>
 
-      {/* Subtle version at very bottom */}
       <div className="text-center py-8">
         <p className="text-[10px] text-muted-foreground/50">
           {data.ui.version}
           {' '}
           2.0.0 ·
+          {' '}
           {data.ui.updated}
           {' '}
           2026-05-10

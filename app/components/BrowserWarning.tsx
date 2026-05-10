@@ -43,9 +43,7 @@ export function BrowserWarning() {
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogTitle>
-          {browser}
-          {' '}
-          浏览器提示
+          {ui.browserWarningTitle.replace('{browser}', browser)}
         </AlertDialogTitle>
         <AlertDialogDescription>
           {ui.browserWarning.replace('{browser}', browser)}

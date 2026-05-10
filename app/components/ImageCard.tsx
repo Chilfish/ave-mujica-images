@@ -1,15 +1,9 @@
 /**
  * 单张图片卡片 — 16:9 比例、hover 台词覆盖层
- *
- * Apple UX：
- * - 图片用 object-cover 填充，不拉伸
- * - overlay 绝对定位，不占用卡片高度
- * - 手机端 touch-action 优化，长按 = hover
- * - min tap target 44px
  */
 
 import type { Locale } from '~/i18n/types'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useIsMobile } from '~/hooks/use-mobile'
 import { ImageActions } from './ImageActions'
 
@@ -22,7 +16,6 @@ interface ImageResult {
 
 interface ImageCardProps {
   image: ImageResult
-  seriesId: string
   locale: Locale
   ui: {
     copyImage: string
@@ -30,47 +23,44 @@ interface ImageCardProps {
     copyLink: string
     copied: string
     copiedLink: string
+    loadFailed: string
     episode: string
   }
 }
 
-export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
+/** 从 id 推导系列：ave-mujica-e01-001 → ave-mujica */
+function seriesFromId(id: string): string {
+  return id.replace(/-e\d+-\d+$/, '')
+}
+
+export function ImageCard({ image, locale, ui }: ImageCardProps) {
   const [loaded, setLoaded] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const [tapped, setTapped] = useState(false) // 移动端 tap 切换 overlay
-  const cardRef = useRef<HTMLDivElement>(null)
+  const [tapped, setTapped] = useState(false)
   const isMobile = useIsMobile()
 
+  const seriesId = seriesFromId(image.id)
   const url = `/images/${seriesId}/${image.filename}`
   const displayText = image.text[locale] || image.text['zh-TW']
   const episodeLabel = ui.episode.replace('{episode}', String(image.episode))
 
   const handleLoad = useCallback(() => setLoaded(true), [])
-
-  // 移动端：tap 显示/隐藏 overlay
   const handleTap = useCallback(() => {
-    if (isMobile) {
+    if (isMobile)
       setTapped(v => !v)
-    }
   }, [isMobile])
 
   const showOverlay = isMobile ? tapped : hovered
 
   return (
     <div
-      ref={cardRef}
       className="group relative rounded-lg overflow-hidden border bg-card cursor-pointer"
       onMouseEnter={() => !isMobile && setHovered(true)}
       onMouseLeave={() => !isMobile && setHovered(false)}
       onClick={handleTap}
     >
-      {/* 图片容器 — 固定 16:9 */}
       <div className="relative aspect-[16/9] w-full overflow-hidden">
-        {/* 骨架 */}
-        {!loaded && (
-          <div className="absolute inset-0 animate-pulse bg-muted" />
-        )}
-
+        {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
         <img
           src={url}
           alt={displayText}
@@ -82,13 +72,13 @@ export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
         />
       </div>
 
-      {/* 底部信息条 — 始终可见的集数 */}
       <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-muted-foreground">
         <span className="truncate">{episodeLabel}</span>
-        <span className="text-[10px] opacity-50 tabular-nums">{image.id.split('-').pop()}</span>
+        <span className="text-[10px] opacity-50 tabular-nums">
+          {image.id.split('-').pop()}
+        </span>
       </div>
 
-      {/* Hover/Tap 台词覆盖层 — 绝对定位，不占布局空间 */}
       <div
         className={`absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-3 transition-opacity duration-200 ${
           showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -99,13 +89,7 @@ export function ImageCard({ image, seriesId, locale, ui }: ImageCardProps) {
         </p>
       </div>
 
-      {/* 悬浮操作按钮 — 只在 overlay 可见时显示 */}
-      <ImageActions
-        image={image}
-        seriesId={seriesId}
-        ui={ui}
-        visible={showOverlay}
-      />
+      <ImageActions image={image} ui={ui} visible={showOverlay} />
     </div>
   )
 }
