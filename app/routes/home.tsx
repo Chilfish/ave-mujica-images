@@ -92,13 +92,15 @@ export default function Home() {
           <LocaleSwitcher />
         </div>
 
-        {/* Toolbar row — all controls inline */}
+        {/* Toolbar — search full width, filters wrap below */}
         <div className="container mx-auto px-4 pb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchBar />
-            <SeriesTabs seriesList={data.seriesList} />
-            <EpisodeFilter episodes={data.episodes} />
-            <SortToggleButtons />
+            <div className="flex items-center gap-2">
+              <SeriesTabs seriesList={data.seriesList} />
+              <EpisodeFilter episodes={data.episodes} />
+              <SortToggleButtons />
+            </div>
           </div>
         </div>
       </header>
